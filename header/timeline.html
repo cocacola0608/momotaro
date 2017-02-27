@@ -1,0 +1,36 @@
+    <?php
+    $sql = 'SELECT 
+              POST_PHOTO,
+              TIMELINES.COMMENT,
+              TIMELINES.LOGIN_ID,
+              USER_NAME
+            FROM 
+              TIMELINES
+            INNER JOIN USERS
+            ON TIMELINES.LOGIN_ID = USERS.LOGIN_ID
+            ORDER BY
+            LEFT(POST_PHOTO,12) DESC
+            ;';
+
+    $stm = $pdo->prepare($sql);
+    $stm->execute();
+    while($result = $stm->fetch(PDO::FETCH_ASSOC) ){   
+    ?>
+    <div class="card container" style="width: 20rem;">
+      <div class="user">
+        <form action="../user" method="get">
+          <input id="user" type= "submit" name="user" value="<?php echo $result['USER_NAME']; ?>">
+        </form>
+      </div>
+      <img class="card-img-top" src="../assets/img/<?php echo $result['POST_PHOTO'];?>.jpg" alt="Card image cap" width="280px" height="150px">
+      <div class="card-block">
+        <p class="card-text"><?php echo $result['COMMENT'];?></p>
+      </div>
+      <div class="card-block">
+        <a href="#" class="card-link">いいね</a>
+        <a href="#" class="card-link">コメント</a>
+      </div>
+    </div>
+    <?php
+    }
+    ?>

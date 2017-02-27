@@ -1,0 +1,112 @@
+<?php
+session_start();
+require('./model/dbconnect.php');
+
+$sql = 'SELECT * FROM USERS WHERE LOGIN_ID = :user_id;';
+$stm = $pdo->prepare($sql);
+
+if(isset($_SESSION['LOGIN_ID']) && $_SESSION['LOGIN_ID'] != ''){
+    //セッションが残っていれば
+    $stm->bindValue(':user_id',$_SESSION['LOGIN_ID']);  
+
+}else{
+    //セッションが残っていなければ、一時的にtest1を代入し、エラー回避
+    $_SESSION['LOGIN_ID'] = "test1";
+    $stm->bindValue(':user_id',$_SESSION['LOGIN_ID']);  
+}
+
+$stm->execute();
+
+if( $result = $stm->fetch(PDO::FETCH_ASSOC) ){
+    //セッションに残った情報がSQLの結果に一致すれば、ログイン
+    $_SESSION['LOGIN_ID'] = $result['LOGIN_ID'];
+    $_SESSION['USER_NAME'] = $result['USER_NAME'];
+    header('Location: ./top');
+}
+else{
+    //facebook用ログインロジック
+    require_once("./socialLogin/facebook/facebook.php");
+
+    $config = array(
+        'appId' => '236662893444989', 
+        'secret' => '05f786d848c0596a9b8a75fe8a0e8d76'
+    );
+
+    $facebook = new Facebook($config);
+    $user = $facebook->getUser();
+
+    if($user){
+        // ユーザの情報を取得
+        $userStatus = $facebook->api('/me','GET');
+        $sql = 'SELECT * FROM USERS WHERE LOGIN_ID = :user_id;';
+
+        $stm = $pdo->prepare($sql);
+        $stm->bindValue(':user_id',$userStatus["id"]);  
+        $stm->execute();
+
+        if( $result = $stm->fetch(PDO::FETCH_ASSOC) ){
+            //登録済みのfacebookアカウントでのログイン成功
+            $_SESSION['LOGIN_ID'] = $result['LOGIN_ID'];
+            $_SESSION['USER_NAME'] = $result['USER_NAME'];
+        }
+        else{
+            //新規登録のfacebookアカウントでの、ももたろうおんらいん新規登録開始
+            $sql = 'INSERT INTO USERS VALUES (:user_id,:user_name,:user_thum,:user_auth,:datetime,:comment);';
+
+            $stm = $pdo->prepare($sql);
+            $stm->bindValue(':user_id',$userStatus["id"]); 
+            $stm->bindValue(':user_name',$userStatus["name"]);  
+            $stm->bindValue(':user_thum',"thum");
+            $stm->bindValue(':user_auth',1);   
+            $stm->bindValue(':datetime',date('c'));   
+            $stm->bindValue(':comment',"よろしく");     
+            $result = $stm->execute();
+            $_SESSION['LOGIN_ID'] = $result['LOGIN_ID'];
+            $_SESSION['USER_NAME'] = $result['USER_NAME'];
+
+        }
+    //ログインして、トップページへ遷移
+    header('Location: ./top');
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, 
+maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="動物画像投稿SNSです。ハムスターのももたろうの写真を投稿するので、みんなも投稿してね！">
+    <!-- This file has been downloaded from Bootsnipp.com. Enjoy! -->
+    <title>ももたろう おんらいん</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" rel="stylesheet">
+    <LINK href="/assets/login/login.css" rel="stylesheet" type="text/css">
+    <link href="/socialLogin/bootstrap-social-gh-pages/bootstrap-social.css" rel="stylesheet">
+    <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
+</head>
+
+<body>
+
+
+
+<div class="container">
+	<div class="login-container">
+            <div id="output"></div>
+            <img src="./assets/login/title.jpg" alt="title" width="220px" height="80px">
+            <div class="avatar"></div>
+            <div class="form-box">
+                <form action="" method="">
+                    <a class="btn btn-block btn-social btn-twitter" href="./socialLogin/twitter/login.php"><span class="fa fa-twitter"></span> Twitterでログイン</a>
+                    <a class="btn btn-block btn-social btn-facebook" href="<?php echo $facebook->getLoginUrl();?>"><span class="fa fa-facebook"></span> Facebookでログイン</a>
+                    <!--　<a class="btn btn-block btn-social btn-instagram" href="./insta.php"><span class="fa fa-instagram"></span> Instagramでログイン</a>　 -->
+
+                </form>
+            </div>
+        </div>
+        
+</div>
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+
+    <?php
+    if(isset($_SESSION['postError']) && $_SESSION['postError'] != ''){
+      if($_SESSION['postError'] == "postError"){
+    ?>
+    <script>
+      swal({   
+          title: "ERROR!",   
+          text: "しゃしんをえらんでね！",  
+          type: "error",   
+          confirmButtonText: "OK"
+    });
+    </script>
+    <?php 
+      $_SESSION['postError'] = "";
+      }
+    }
+    ?>
+
+
+    <?php
+    if(isset($_SESSION['nameError']) && $_SESSION['nameError'] != ''){
+      if($_SESSION['nameError'] == "nameError"){
+    ?>
+    <script>
+      swal({   
+          title: "ERROR!",   
+          text: "なまえがただしくないよ！",  
+          type: "error",   
+          confirmButtonText: "OK"
+    });
+    </script>
+    <?php 
+      $_SESSION['nameError'] = "";
+      }
+    }
+    ?>
+
+
+    <?php
+    if(isset($_SESSION['postCorrect']) && $_SESSION['postCorrect'] != ''){
+      if($_SESSION['postCorrect'] == "postCorrect"){
+    ?>
+    <script>
+      swal({   
+          title: "SUCCESS!",   
+          text: "とうこうできたよ！",  
+          type: "success",   
+          confirmButtonText: "OK"
+    });
+    </script>
+    <?php 
+      $_SESSION['postCorrect'] = "";
+      }
+    }
+    ?>

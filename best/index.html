@@ -1,0 +1,53 @@
+<?php
+session_start();
+if($_SESSION['LOGIN_ID'] != ''){
+  require('../model/dbconnect.php');
+  $sql = 'SELECT * FROM USERS WHERE LOGIN_ID = :user_id;';
+
+  $stm = $pdo->prepare($sql);
+  $stm->bindValue(':user_id',$_SESSION['LOGIN_ID']);  
+  $stm->execute();
+  if( $result = $stm->fetch(PDO::FETCH_ASSOC) ){
+    $_SESSION['LOGIN_ID'] = $result['LOGIN_ID'];
+    $_SESSION['USER_NAME'] = $result['USER_NAME'];
+  }else{
+    header('Location: ../');
+  }
+}else{
+  header('Location: ../');
+}
+?>
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ももたろう おんらいん</title>
+    <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script src="../assets/bootstrap/js/jquery-3.1.1.min.js"></script>
+    <script>
+       //共通パーツ読み込み
+       $(function() {
+       $("#header").load("../header/header.html");
+       });
+      </script>
+    </head>
+  </head>
+  <body>
+    <div id="header">
+    </div>
+    <script src="../assets/bootstrap/js/bootstrap.min.js"></script>
+
+
+    
+
+
+best
+  </body>
+</html>

@@ -1,0 +1,24 @@
+   <div class="jumbotron jumbotron-fluid">
+      <div class="container text-center">
+        <form action="../model/post.php" method="POST" enctype="multipart/form-data">
+          <textarea class="form-control container" id="exampleTextarea" name="comment" rows="2" placeholder="あなたのとった どうぶつのしゃしんと こめんとを とうこうしてね"></textarea>
+          <input id="lefile" type="file" accept="image/*" style="display:none" name="file"　style="display:none">
+          <div class="input-group">
+            <span class="input-group-btn"><button type="button" class="btn btn-info" onclick="$('input&#91;id=lefile&#93;').click();"><img src="../assets/login/camera.png"></button></span>          
+            <input type="text" id="photoCover" class="form-control" placeholder="しゃしんをえらんでね" readonly="readonly">
+            <button type="submit">投稿</button>
+          </div>
+          <script>
+            $('input[id=lefile]').change(function() {
+              $('#photoCover').val($(this).val().replace("C:\\fakepath\\", ""));
+            });
+          </script>
+          
+        </form>
+      </div>
+    </div>
+
+
+
+
+

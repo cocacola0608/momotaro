@@ -1,0 +1,186 @@
+<?php
+session_start();
+
+if($_SESSION['LOGIN_ID'] != ''){
+  require('../model/dbconnect.php');
+  $sql = 'SELECT * FROM USERS WHERE LOGIN_ID = :user_id;';
+
+  $stm = $pdo->prepare($sql);
+  $stm->bindValue(':user_id',$_SESSION['LOGIN_ID']);  
+  $stm->execute();
+  if( $result = $stm->fetch(PDO::FETCH_ASSOC) ){
+    $_SESSION['LOGIN_ID'] = $result['LOGIN_ID'];
+    $_SESSION['USER_NAME'] = $result['USER_NAME'];
+
+  }else{
+    header('Location: ../');
+  }
+}else{
+  header('Location: ../');
+}
+
+if(isset($_GET['user'])){
+
+  $sql = 'SELECT 
+            POST_PHOTO,
+            TIMELINES.COMMENT,
+            TIMELINES.LOGIN_ID,
+            USER_NAME
+          FROM 
+            TIMELINES
+          INNER JOIN USERS
+          ON TIMELINES.LOGIN_ID = USERS.LOGIN_ID
+          WHERE
+            USER_NAME = :user_name
+          ORDER BY
+          LEFT(POST_PHOTO,12) DESC
+          ;';
+
+  $stm = $pdo->prepare($sql);
+  $stm->bindValue(':user_name',$_GET['user']);
+  $stm->execute();
+  if($result = $stm->fetch(PDO::FETCH_ASSOC) ){
+  }else{
+  $_SESSION['nameError'] = "nameError";
+  header('Location: ../');
+  }
+}else{
+  header('Location: ../');
+}
+
+?>
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ももたろう おんらいん</title>
+    <link href="../assets/bootstrap/css/top.css" rel="stylesheet">
+    <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script src="../assets/bootstrap/js/jquery-3.1.1.min.js"></script>
+    <script src="../assets/bootstrap/js/bootstrap.min.js"></script>
+    <script>
+       //共通パーツ読み込み
+       $(function() {
+       $("#header").load("../header/header.html");
+       $("#header1").load("../header/header1.html");
+       });
+    </script>
+    <script src="../assets/sweetalert.min.js"></script> 
+    <link rel="stylesheet" href="../assets/sweetalert.css"> 
+  </head>
+  <body>
+    <div id="header">
+    </div>
+
+    <?php
+
+    $sql = 'SELECT USER_THUM,TIMELINES.POST_PHOTO, TIMELINES.COMMENT, TIMELINES.LOGIN_ID, USER_NAME, CUTE, CUTE_USER,COMMENTS, COMMENTS_USER
+            FROM TIMELINES
+            INNER JOIN USERS ON TIMELINES.LOGIN_ID = USERS.LOGIN_ID
+            LEFT JOIN (
+            SELECT NICES.POST_PHOTO, SUM( USER_AUTH ) AS CUTE
+            FROM NICES
+            LEFT JOIN USERS ON NICES.LOGIN_ID = USERS.LOGIN_ID
+            GROUP BY POST_PHOTO
+            ) AS NICES ON NICES.POST_PHOTO = TIMELINES.POST_PHOTO
+            LEFT JOIN (
+            SELECT POST_PHOTO, COUNT( * ) AS CUTE_USER
+            FROM NICES
+            LEFT JOIN USERS
+            ON NICES.LOGIN_ID = USERS.LOGIN_ID
+            WHERE NICES.LOGIN_ID = :login_id1
+            GROUP BY POST_PHOTO
+            ) AS NICES_USER ON TIMELINES.POST_PHOTO = NICES_USER.POST_PHOTO
+            LEFT JOIN (
+            SELECT COMMENTS.POST_PHOTO, COUNT( COMMENTS.LOGIN_ID ) AS COMMENTS
+            FROM COMMENTS
+            LEFT JOIN USERS ON COMMENTS.LOGIN_ID = USERS.LOGIN_ID
+            GROUP BY POST_PHOTO
+            ) AS COMMENTS ON COMMENTS.POST_PHOTO = TIMELINES.POST_PHOTO
+            LEFT JOIN (
+            SELECT POST_PHOTO, COUNT( * ) AS COMMENTS_USER
+            FROM COMMENTS
+            LEFT JOIN USERS
+            ON COMMENTS.LOGIN_ID = USERS.LOGIN_ID
+            WHERE USER_NAME = :user_name1
+            GROUP BY POST_PHOTO
+            ) AS COMMENTS_USER ON TIMELINES.POST_PHOTO = COMMENTS_USER.POST_PHOTO
+            WHERE USER_NAME =  :user_name2
+            ORDER BY LEFT( TIMELINES.POST_PHOTO, 12 ) DESC 
+            ;';
+
+    $stm = $pdo->prepare($sql);
+    $stm->bindValue(':login_id1',$_SESSION['LOGIN_ID']);
+    $stm->bindValue(':user_name1',$_GET['user']);
+    $stm->bindValue(':user_name2',$_GET['user']);
+    $stm->execute();
+    while($result = $stm->fetch(PDO::FETCH_ASSOC) ){   
+    ?>
+    <div class="card container" style="width: 23.5rem;">
+      <div class="user" style="display:inline-flex">
+        <form>
+          <img src='../assets/thum/<?php echo $result['USER_THUM']; ?>.jpg' width="50px" height="50px"/>
+        </form>
+        <form action="../user" method="get">
+          <input id="user" type= "submit" name="user" value="<?php echo $result['USER_NAME']; ?>">
+        </form>
+        <form>
+          <input id="user" value="<?php echo "20".substr($result['POST_PHOTO'],0,2)."/".substr($result['POST_PHOTO'],2,2)."/".substr($result['POST_PHOTO'],4,2)." ".substr($result['POST_PHOTO'],6,2).":".substr($result['POST_PHOTO'],8,2);?>" disabled="disabled">
+        </form>
+      </div>
+        <a href='../timeline/?timeline=<?php echo $result['POST_PHOTO']; ?>'  class="container">
+          <img class="card-img-top container" src="../assets/img/<?php echo $result['POST_PHOTO'];?>.jpg" alt="Card image cap" width="300px" height="400px">
+        </a>
+      <div class="card-block">
+        <p class="card-text"><?php echo $result['COMMENT'];?></p>
+      </div>
+      <div class="card-block">
+        <?php
+        if(is_null($result['CUTE'])) {
+          echo "0";
+        }else{
+          echo $result['CUTE'];
+        }?>
+        <button class="card-link">
+        <?php
+        $_SESSION['POST_PHOTO'] = $result['POST_PHOTO'];
+        if(is_null($result['CUTE_USER'])){
+          echo " かわいい？";
+        }else{
+          echo " かわいい！";
+        }
+        ?>
+        </button>
+        <?php
+        if(is_null($result['COMMENTS'])) {
+          echo "0";
+        }else{
+          echo $result['COMMENTS'];
+        }?>
+        <button class="card-link">
+          コメント
+        </button>
+
+<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://test" data-text="<?php echo $result['COMMENT'];?>" data-via="momotaro_online">Tweet</a> <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.momotaro_online(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+
+
+
+
+
+
+      </div>
+    </div>
+    <?php
+    }
+    ?>
+ 
+  </body>
+</html>

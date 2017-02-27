@@ -1,0 +1,213 @@
+<?php
+session_start();
+if($_SESSION['LOGIN_ID'] != ''){
+  require('../model/dbconnect.php');
+  $sql = 'SELECT * FROM USERS WHERE LOGIN_ID = :user_id;';
+
+  $stm = $pdo->prepare($sql);
+  $stm->bindValue(':user_id',$_SESSION['LOGIN_ID']);  
+  $stm->execute();
+  if( $result = $stm->fetch(PDO::FETCH_ASSOC) ){
+    $_SESSION['LOGIN_ID'] = $result['LOGIN_ID'];
+    $_SESSION['USER_NAME'] = $result['USER_NAME'];
+
+  }else{
+    header('Location: ../');
+  }
+}else{
+  header('Location: ../');
+}
+
+$sql = 'SELECT 
+              USER_THUM,
+              TIMELINES.POST_PHOTO,
+              TIMELINES.COMMENT,
+              TIMELINES.LOGIN_ID,
+              USER_NAME,
+              CUTE,
+              CUTE_USER,
+              COMMENTS,
+              COMMENTS_USER
+            FROM 
+              TIMELINES
+            INNER JOIN USERS
+            ON TIMELINES.LOGIN_ID = USERS.LOGIN_ID
+            LEFT JOIN 
+             (SELECT POST_PHOTO,SUM(USER_AUTH) as CUTE 
+            FROM NICES
+            LEFT JOIN USERS
+            ON NICES.LOGIN_ID = USERS.LOGIN_ID
+            GROUP BY POST_PHOTO) AS NICES
+            ON TIMELINES.POST_PHOTO = NICES.POST_PHOTO
+            LEFT JOIN 
+             (SELECT POST_PHOTO,COUNT(*) as CUTE_USER 
+            FROM NICES 
+            WHERE LOGIN_ID = :login_id1
+            GROUP BY POST_PHOTO) AS NICES_USER
+            ON TIMELINES.POST_PHOTO = NICES_USER.POST_PHOTO
+            LEFT JOIN 
+             (SELECT POST_PHOTO,COUNT(COMMENTS.LOGIN_ID) as COMMENTS 
+            FROM COMMENTS
+            LEFT JOIN USERS
+            ON COMMENTS.LOGIN_ID = USERS.LOGIN_ID
+            GROUP BY POST_PHOTO) AS COMMENTS
+            ON TIMELINES.POST_PHOTO = COMMENTS.POST_PHOTO
+            LEFT JOIN 
+             (SELECT POST_PHOTO,COUNT(*) as COMMENTS_USER FROM COMMENTS WHERE LOGIN_ID = :login_id2 GROUP BY POST_PHOTO) AS COMMENTS_USER
+            ON TIMELINES.POST_PHOTO = COMMENTS_USER.POST_PHOTO
+             WHERE TIMELINES.POST_PHOTO = :timeline
+            ORDER BY
+            LEFT(TIMELINES.POST_PHOTO,12) DESC';
+
+$stm = $pdo->prepare($sql);
+$stm->bindValue(':timeline',$_GET['timeline']);  
+$stm->bindValue(':login_id1',$_SESSION['LOGIN_ID']);  
+$stm->bindValue(':login_id2',$_SESSION['LOGIN_ID']);  
+$stm->execute();
+$result = $stm->fetch(PDO::FETCH_ASSOC);
+
+
+?>
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ももたろう おんらいん</title>
+    <link href="../assets/bootstrap/css/top.css" rel="stylesheet">
+    <link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script src="../assets/bootstrap/js/jquery-3.1.1.min.js"></script>
+    <script src="../assets/bootstrap/js/bootstrap.min.js"></script>
+
+    <script src="../assets/sweetalert.min.js"></script> 
+    <link rel="stylesheet" href="../assets/sweetalert.css">     
+    <script>
+       //共通パーツ読み込み
+       $(function() {
+       $("#header").load("../header/header.html");
+       $("#header1").load("../header/header2.html");
+       });
+    </script>
+
+    <script>
+        // 確認アラート
+        document.querySelector('button.confirm').onclick = function(){
+            swal({
+                title:"Are you sure?", // タイトル文
+                text:"Your will not be able to recover this imaginary file!", //説明文
+                type:"warning", // default:null "warning","error","success","info"
+                allowOutsideClick:false, // default:false アラートの外を画面クリックでアラート削除
+                showCancelButton: true, // default:false キャンセルボタンの有無
+                confirmButtonText:"オッケー", // default:"OK" 確認ボタンの文言
+                confirmButtonColor: "#DD6B55", // default:"#AEDEF4" 確認ボタンの色
+                cancelButtonText:"キャンセル", // キャンセルボタンの文言
+                closeOnConfirm: false // default:true 確認ボタンを押したらアラートが削除される
+                },
+                function(){
+                    swal("Deleted!", "Your imaginary file has been deleted.", "success");
+                }
+            );
+        };
+    </script>
+
+
+
+  </head>
+  <body>
+    <div id="header">
+    </div>
+    <div id="header2">
+    </div>
+
+
+
+
+
+
+    <div class="card container" style="width: 23.5rem;">
+      <div class="user" style="display:inline-flex">
+        <form>
+          <img src='../assets/thum/<?php echo $result['USER_THUM']; ?>.jpg' width="50px" height="50px"/>
+        </form>
+        <form action="../user" method="get">
+          <input id="user" type= "submit" name="user" value="<?php echo $result['USER_NAME']; ?>">
+        </form>
+        <form>
+          <input id="user" value="<?php echo "20".substr($_GET['timeline'],0,2)."/".substr($_GET['timeline'],2,2)."/".substr($_GET['timeline'],4,2)." ".substr($_GET['timeline'],6,2).":".substr($_GET['timeline'],8,2);?>" disabled="disabled">
+        </form>
+      </div>
+        <div class="container">
+         <img class="card-img-top container" src="../assets/img/<?php echo $_GET['timeline']; ?>.jpg" alt="Card image cap" width="300px" height="400px">
+        </div>
+      <?php 
+      if(substr($_GET['timeline'], 12) !=  $_SESSION['LOGIN_ID']){
+      ?>
+      <div class="card-block">
+        <p class="card-text"><?php echo $result['COMMENT'];?></p>
+      </div>
+      <?php
+      }else{
+      ?>
+      <form class="container">
+        <div class="card-block timelineTextarea">
+          <textarea style="width: 300px;"><?php echo $result['COMMENT'];?></textarea>
+        </div>
+        <div align="right">
+          <img src="../assets/login/rewrite.png" />
+          <button class="confirm"><img src="../assets/login/trush.png" /></button>
+        </div>
+      </form>
+      <?php
+      }
+      ?>
+
+
+      <div class="card-block">
+        <?php
+        if(is_null($result['CUTE'])) {
+          echo "0";
+        }else{
+          echo $result['CUTE'];
+        }?>
+        <button class="card-link">
+        <?php
+        $_SESSION['POST_PHOTO'] = $result['POST_PHOTO'];
+        if(is_null($result['CUTE_USER'])){
+          echo " かわいい？";
+        }else{
+          echo " かわいい！";
+        }
+        ?>
+        </button>
+        <?php
+        if(is_null($result['COMMENTS'])) {
+          echo "0";
+        }else{
+          echo $result['COMMENTS'];
+        }?>
+        <button class="card-link">
+          コメント
+        </button>
+
+<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://test" data-text="<?php echo $result['COMMENT'];?>" data-via="momotaro_online">Tweet</a> <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.momotaro_online(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+
+
+
+
+
+
+      </div>
+    </div>
+
+
+
+
+</body>
+</html>
