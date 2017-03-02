@@ -55,7 +55,7 @@ else{
     $stm = $pdo->prepare($sql);
     $stm->bindValue(':user_id',$user->id_str);
     $stm->bindValue(':user_name',$user->name);  
-    $stm->bindValue(':user_thum',"thum");
+    $stm->bindValue(':user_thum',mt_rand(1, 5));
     $stm->bindValue(':user_auth',1);   
     $stm->bindValue(':datetime',date('c'));
     $stm->bindValue(':comment',"よろしく");      
